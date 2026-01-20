@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>東京2026 | TOKYO GETAWAY</title>
+    <title>東京無人島移居計畫 | TOKYO GETAWAY</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -1120,24 +1120,52 @@
              const ta = document.getElementById('backup-textarea');
              const btn = document.getElementById('backup-action-btn');
              const instr = document.getElementById('backup-instruction');
+             
              area.classList.remove('hidden');
+             
              if(mode === 'export') {
-                 instr.innerText = "複製下方代碼以備份：";
-                 ta.value = JSON.stringify(appData);
-                 btn.innerText = "複製代碼";
-                 btn.onclick = function() { ta.select(); document.execCommand('copy'); showToast("已複製備份代碼"); };
+                 // 匯出模式：隱藏文字框，改為下載檔案
+                 instr.innerText = "點擊下方按鈕下載備份檔案 (.json)：";
+                 ta.classList.add('hidden'); // 隱藏顯示一堆文字的區域
+                 btn.innerText = "📥 下載 JSON 備份檔";
+                 btn.className = "nook-btn bg-tokyo-blue text-white w-full py-3 shadow-md hover:bg-tokyo-ink transition-colors flex justify-center items-center gap-2";
+                 
+                 btn.onclick = function() { 
+                     const dataStr = JSON.stringify(appData, null, 2); // 格式化 JSON 讓它好看一點
+                     const blob = new Blob([dataStr], {type: "application/json"});
+                     const url = URL.createObjectURL(blob);
+                     
+                     const a = document.createElement('a');
+                     a.href = url;
+                     // 檔名包含日期，方便辨識版本
+                     a.download = `tokyo_travel_backup_${new Date().toISOString().slice(0,10)}.json`;
+                     document.body.appendChild(a);
+                     a.click();
+                     document.body.removeChild(a);
+                     URL.revokeObjectURL(url);
+                     
+                     showToast("✅ 備份檔已下載至裝置"); 
+                 };
              } else {
-                 instr.innerText = "貼上代碼以還原：";
+                 // 匯入模式：顯示文字框讓用戶貼上
+                 instr.innerText = "請打開備份檔 (JSON)，複製內容並貼於下方：";
+                 ta.classList.remove('hidden'); 
                  ta.value = "";
-                 btn.innerText = "還原資料 (會覆蓋現有資料)";
+                 ta.placeholder = '{ "config": ... }';
+                 btn.innerText = "🔄 確認還原 (將覆蓋現有資料)";
+                 btn.className = "nook-btn bg-red-500 text-white w-full py-3 shadow-md hover:bg-red-600 transition-colors flex justify-center items-center gap-2";
+                 
                  btn.onclick = function() {
                      try {
+                         if (!ta.value.trim()) return showToast("❌ 請先貼上內容");
                          const d = JSON.parse(ta.value);
-                         if(confirm("確定還原？現有資料將被覆蓋！")) {
+                         if(confirm("⚠️ 警告：確定要還原嗎？\n\n這將會「覆蓋」您目前所有的 APP 資料！")) {
                              localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
                              location.reload();
                          }
-                     } catch(e) { alert("代碼錯誤"); }
+                     } catch(e) { 
+                         alert("❌ 資料格式錯誤！\n請確認您貼上的是完整的 JSON 內容。"); 
+                     }
                  };
              }
         }
